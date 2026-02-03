@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using InvoiceManager.Common;
 using InvoiceManager.Data;
 using InvoiceManager.DTOs.CustomerDto;
 using InvoiceManager.Models;
@@ -77,5 +78,38 @@ public class CustomerService : ICustomerService
 
         return true;
     }
+
+    public async Task<PagedResult<CustomerResponseDto>> GetPagedAsync(
+    int page = 1,
+    int pageSize = 10,
+    string? nameFilter = null,
+    string? sortBy = "Id",
+    bool ascending = true)
+    {
+        var query = _context.Customers
+                            .Where(c => c.DeletedAt == null) // только активные
+                            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(nameFilter))
+            query = query.Where(c => c.Name.Contains(nameFilter));
+
+        query = sortBy?.ToLower() switch
+        {
+            "name" => ascending ? query.OrderBy(c => c.Name) : query.OrderByDescending(c => c.Name),
+            "email" => ascending ? query.OrderBy(c => c.Email) : query.OrderByDescending(c => c.Email),
+            _ => ascending ? query.OrderBy(c => c.Id) : query.OrderByDescending(c => c.Id)
+        };
+
+        var totalCount = await query.CountAsync();
+        var items = await query
+                        .Skip((page - 1) * pageSize)
+                        .Take(pageSize)
+                        .ToListAsync();
+
+        var mapped = _mapper.Map<IEnumerable<CustomerResponseDto>>(items);
+
+        return PagedResult<CustomerResponseDto>.Create(mapped, page, pageSize, totalCount);
+    }
+
 }
 

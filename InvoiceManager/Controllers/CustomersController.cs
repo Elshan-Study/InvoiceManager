@@ -73,4 +73,17 @@ public class CustomersController : ControllerBase
             return BadRequest(ApiResponse<object>.ErrorResponse($"Cannot hard-delete customer with ID {id} (maybe has invoices or does not exist)."));
         return Ok(ApiResponse<object>.SuccessResponse(null, "Customer hard-deleted successfully."));
     }
+
+    [HttpGet("paged")]
+    public async Task<ActionResult<ApiResponse<PagedResult<CustomerResponseDto>>>> GetPaged(
+    [FromQuery] int page = 1,
+    [FromQuery] int pageSize = 10,
+    [FromQuery] string? name = null,
+    [FromQuery] string? sortBy = "Id",
+    [FromQuery] bool ascending = true)
+    {
+        var result = await _customerService.GetPagedAsync(page, pageSize, name, sortBy, ascending);
+        return Ok(ApiResponse<PagedResult<CustomerResponseDto>>.SuccessResponse(result, "Paged customers retrieved successfully"));
+    }
+
 }

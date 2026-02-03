@@ -1,5 +1,6 @@
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using InvoiceManager.Common;
 using InvoiceManager.Data;
 using InvoiceManager.Mappings;
 using InvoiceManager.Middlewares;
@@ -34,6 +35,7 @@ builder.Services.AddSwaggerGen(
         var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
         var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
         if (File.Exists(xmlPath)) options.IncludeXmlComments(xmlPath);
+        options.SchemaFilter<SwaggerExampleSchemaFilter>();
     }
     );
 

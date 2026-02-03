@@ -1,5 +1,6 @@
 ﻿using InvoiceManager.Common;
 using InvoiceManager.DTOs.InvoiceDto;
+using InvoiceManager.Models;
 using InvoiceManager.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -83,4 +84,20 @@ public class InvoicesController : ControllerBase
             return BadRequest(ApiResponse<object>.ErrorResponse($"Cannot hard-delete invoice with ID {id} (maybe already sent or does not exist)."));
         return Ok(ApiResponse<object>.SuccessResponse(null, "Invoice hard-deleted successfully."));
     }
+
+    [HttpGet("paged")]
+    public async Task<ActionResult<ApiResponse<PagedResult<InvoiceResponseDto>>>> GetPaged(
+    [FromQuery] int page = 1,
+    [FromQuery] int pageSize = 10,
+    [FromQuery] int? customerId = null,
+    [FromQuery] InvoiceStatus? status = null,
+    [FromQuery] DateTimeOffset? startFrom = null,
+    [FromQuery] DateTimeOffset? endTo = null,
+    [FromQuery] string? sortBy = "Id",
+    [FromQuery] bool ascending = true)
+    {
+        var result = await _invoiceService.GetPagedAsync(page, pageSize, customerId, status, startFrom, endTo, sortBy, ascending);
+        return Ok(ApiResponse<PagedResult<InvoiceResponseDto>>.SuccessResponse(result, "Paged invoices retrieved successfully"));
+    }
+
 }
