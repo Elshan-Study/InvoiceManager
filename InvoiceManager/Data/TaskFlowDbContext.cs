@@ -33,6 +33,8 @@ public class TaskFlowDbContext : DbContext
                 .HasMaxLength(50);
             c.Property(x => x.CreatedAt)
                 .IsRequired();
+            c.Property(x => x.UpdatedAt) //add
+                .IsRequired();
 
             // Soft delete filter
             c.HasQueryFilter(x => x.DeletedAt == null);
@@ -52,6 +54,11 @@ public class TaskFlowDbContext : DbContext
                 .IsRequired();
             i.Property(x => x.CreatedAt)
                 .IsRequired();
+            i.Property(x => x.UpdatedAt) //add
+                .IsRequired();
+            i.Property(x => x.TotalSum) //add
+                .IsRequired()
+                .HasColumnType("decimal(18,2)");
 
             i.HasOne<Customer>()
                 .WithMany()
@@ -79,6 +86,9 @@ public class TaskFlowDbContext : DbContext
             r.Property(x => x.Rate)
                 .IsRequired()
                 .HasColumnType("decimal(18,4)");
+            r.Property(x => x.Sum) //add
+                .IsRequired()
+                .HasColumnType("decimal(18,2)");
         });
     }
 

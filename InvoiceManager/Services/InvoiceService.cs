@@ -21,17 +21,33 @@ public class InvoiceService : IInvoiceService
 
     public async Task<InvoiceResponseDto> CreateAsync(CreateInvoiceDto dto)
     {
+        // Проверка существования клиента
+        var customerExists = await _context.Customers.AnyAsync(c => c.Id == dto.CustomerId);
+        if (!customerExists) throw new KeyNotFoundException($"Customer with Id {dto.CustomerId} not found.");
+
         var invoice = _mapper.Map<Invoice>(dto);
+
+        var now = DateTimeOffset.UtcNow; //add
+        invoice.CreatedAt = now; //add
+        invoice.UpdatedAt = now; //add
 
         _context.Invoices.Add(invoice);
         await _context.SaveChangesAsync();
+
+        decimal total = 0m;
 
         foreach (var rowDto in dto.Rows)
         {
             var row = _mapper.Map<InvoiceRow>(rowDto);
             row.InvoiceId = invoice.Id;
+            row.Sum = Decimal.Round(row.Quantity * row.Rate, 2, MidpointRounding.AwayFromZero); //add
+
+            total += row.Sum; //add
             _context.InvoiceRows.Add(row);
         }
+
+        invoice.TotalSum = Decimal.Round(total, 2, MidpointRounding.AwayFromZero); //add
+        invoice.UpdatedAt = DateTimeOffset.UtcNow; //add
 
         await _context.SaveChangesAsync();
 
@@ -49,7 +65,36 @@ public class InvoiceService : IInvoiceService
         if (invoice is null) return null;
         if (invoice.Status != InvoiceStatus.Created) return null;
 
-        _mapper.Map(dto, invoice);
+        // Обновляем заголовок
+        invoice.StartDate = dto.StartDate;
+        invoice.EndDate = dto.EndDate;
+        invoice.Comment = dto.Comment;
+
+        if (dto.Rows != null) //add
+        {
+            _context.InvoiceRows.RemoveRange(invoice.Rows);
+
+            decimal total = 0m;
+            var newRows = new List<InvoiceRow>();
+            foreach (var rDto in dto.Rows)
+            {
+                var row = _mapper.Map<InvoiceRow>(rDto);
+                row.InvoiceId = invoice.Id;
+                row.Sum = Decimal.Round(row.Quantity * row.Rate, 2, MidpointRounding.AwayFromZero);
+                total += row.Sum;
+                newRows.Add(row);
+            }
+
+            invoice.TotalSum = Decimal.Round(total, 2, MidpointRounding.AwayFromZero);
+            invoice.Rows = newRows;
+            _context.InvoiceRows.AddRange(newRows);
+        }
+        else
+        {
+            invoice.TotalSum = invoice.Rows.Sum(r => r.Sum);
+        }
+
+        invoice.UpdatedAt = DateTimeOffset.UtcNow;
         await _context.SaveChangesAsync();
 
         return _mapper.Map<InvoiceResponseDto>(invoice);
@@ -57,35 +102,35 @@ public class InvoiceService : IInvoiceService
 
     public async Task<bool> ChangeStatusAsync(int id, InvoiceStatus status)
     {
-        var invoice = await _context.Invoices.FindAsync(id);
+        var invoice = await _context.Invoices.FirstOrDefaultAsync(i => i.Id == id); //changed
         if (invoice is null) return false;
 
         invoice.Status = status;
+        invoice.UpdatedAt = DateTimeOffset.UtcNow; //added
+
         await _context.SaveChangesAsync();
-
-        return true;
-    }
-
-    public async Task<bool> DeleteHardAsync(int id)
-    {
-        var invoice = await _context.Invoices.FindAsync(id);
-        if (invoice is null) return false;
-        if (invoice.Status != InvoiceStatus.Created) return false;
-
-        _context.Invoices.Remove(invoice);
-        await _context.SaveChangesAsync();
-
         return true;
     }
 
     public async Task<bool> DeleteSoftAsync(int id)
     {
-        var invoice = await _context.Invoices.FindAsync(id);
+        var invoice = await _context.Invoices.FirstOrDefaultAsync(i => i.Id == id); //changed
         if (invoice is null) return false;
 
-        invoice.DeletedAt = DateTimeOffset.UtcNow;
+        invoice.DeletedAt = DateTimeOffset.UtcNow; 
+        invoice.UpdatedAt = DateTimeOffset.UtcNow; //add
         await _context.SaveChangesAsync();
+        return true;
+    }
 
+    public async Task<bool> DeleteHardAsync(int id)
+    {
+        var invoice = await _context.Invoices.IgnoreQueryFilters().FirstOrDefaultAsync(i => i.Id == id);
+        if (invoice is null) return false;
+        if (invoice.Status != InvoiceStatus.Created) return false;
+
+        _context.Invoices.Remove(invoice);
+        await _context.SaveChangesAsync();
         return true;
     }
 
@@ -102,10 +147,11 @@ public class InvoiceService : IInvoiceService
     {
         var invoice = await _context.Invoices
             .Include(i => i.Rows)
-            .FirstOrDefaultAsync(i => i.Id == id);
+            .FirstOrDefaultAsync(i => i.Id == id); 
 
         return invoice is null ? null : _mapper.Map<InvoiceResponseDto>(invoice);
     }
+
     public async Task<PagedResult<InvoiceResponseDto>> GetPagedAsync(
     int page = 1,
     int pageSize = 10,

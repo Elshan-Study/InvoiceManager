@@ -5,6 +5,8 @@ namespace InvoiceManager.DTOs.InvoiceDto;
 
 public class CreateInvoiceDto
 {
+    public int CustomerId { get; set; }          //добавлено
+
     [DefaultValue("2026-02-03T09:00:00Z")]
     public DateTimeOffset StartDate { get; set; }
 

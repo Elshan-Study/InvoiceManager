@@ -22,6 +22,9 @@ public class CustomerService : ICustomerService
     public async Task<CustomerResponseDto> CreateAsync(CreateCustomerDto dto)
     {
         var customer = _mapper.Map<Customer>(dto);
+        var now = DateTimeOffset.UtcNow;
+        customer.CreatedAt = now; //add
+        customer.UpdatedAt = now; //add
 
         _context.Customers.Add(customer);
         await _context.SaveChangesAsync();
@@ -37,16 +40,24 @@ public class CustomerService : ICustomerService
 
     public async Task<CustomerResponseDto?> GetByIdAsync(int id)
     {
-        var customer = await _context.Customers.FindAsync(id);
+        var customer = await _context.Customers //changed
+                        .AsQueryable()
+                        .FirstOrDefaultAsync(c => c.Id == id);
+
         return customer is null ? null : _mapper.Map<CustomerResponseDto>(customer);
     }
 
     public async Task<CustomerResponseDto?> UpdateAsync(int id, UpdateCustomerDto dto)
     {
-        var customer = await _context.Customers.FindAsync(id);
+        var customer = await _context.Customers //changed
+                        .AsQueryable()
+                        .FirstOrDefaultAsync(c => c.Id == id);
+
         if (customer is null) return null;
 
         _mapper.Map(dto, customer);
+        customer.UpdatedAt = DateTimeOffset.UtcNow; //add
+
         await _context.SaveChangesAsync();
 
         return _mapper.Map<CustomerResponseDto>(customer);
@@ -54,10 +65,14 @@ public class CustomerService : ICustomerService
 
     public async Task<bool> DeleteSoftAsync(int id)
     {
-        var customer = await _context.Customers.FindAsync(id);
+        var customer = await _context.Customers //changed
+                        .AsQueryable()
+                        .FirstOrDefaultAsync(c => c.Id == id);
         if (customer is null) return false;
 
         customer.DeletedAt = DateTimeOffset.UtcNow;
+        customer.UpdatedAt = DateTimeOffset.UtcNow; //added
+
         await _context.SaveChangesAsync();
 
         return true;
@@ -70,7 +85,10 @@ public class CustomerService : ICustomerService
 
         if (hasSentInvoices) return false;
 
-        var customer = await _context.Customers.FindAsync(id);
+        var customer = await _context.Customers //changed
+                        .IgnoreQueryFilters() 
+                        .FirstOrDefaultAsync(c => c.Id == id);
+
         if (customer is null) return false;
 
         _context.Customers.Remove(customer);

@@ -28,18 +28,16 @@ public class MappingProfile : Profile
         CreateMap<CreateInvoiceDto, Invoice>()
             .ForMember(d => d.Id, o => o.Ignore())
             .ForMember(d => d.Status, o => o.Ignore())
-            .ForMember(d => d.Rows, o => o.Ignore());
+            .ForMember(d => d.Rows, o => o.Ignore()) //add
+            .ForMember(d => d.TotalSum, o => o.Ignore()) //add
+            .ForMember(d => d.CreatedAt, o => o.Ignore()) //add
+            .ForMember(d => d.UpdatedAt, o => o.Ignore()); //add
 
         CreateMap<CreateInvoiceRowDto, InvoiceRow>()
-            .ForMember(d => d.Id, o => o.Ignore());
+            .ForMember(d => d.Id, o => o.Ignore())
+            .ForMember(d => d.Sum, o => o.Ignore()); //add
 
-        CreateMap<InvoiceRow, InvoiceRowResponseDto>()
-            .ForMember(d => d.Sum, o => o.MapFrom(s => Decimal.Round(s.Quantity * s.Rate, 2, MidpointRounding.AwayFromZero)));
-
-        CreateMap<Invoice, InvoiceResponseDto>()
-            .ForMember(d => d.TotalSum, o => o.MapFrom(s =>
-                s.Rows.Sum(r => Decimal.Round(r.Quantity * r.Rate, 2, MidpointRounding.AwayFromZero))
-            ))
-            .ForMember(d => d.Rows, o => o.MapFrom(s => s.Rows));
+        CreateMap<InvoiceRow, InvoiceRowResponseDto>(); //change
+        CreateMap<Invoice, InvoiceResponseDto>(); //change
     }
 }
