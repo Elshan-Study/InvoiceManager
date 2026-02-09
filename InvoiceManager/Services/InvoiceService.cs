@@ -63,7 +63,8 @@ public class InvoiceService : IInvoiceService
             .FirstOrDefaultAsync(i => i.Id == id);
 
         if (invoice is null) return null;
-        if (invoice.Status != InvoiceStatus.Created) return null;
+        if (invoice.Status == InvoiceStatus.Sent)
+            return null;
 
         // Обновляем заголовок
         invoice.StartDate = dto.StartDate;
@@ -127,7 +128,7 @@ public class InvoiceService : IInvoiceService
     {
         var invoice = await _context.Invoices.IgnoreQueryFilters().FirstOrDefaultAsync(i => i.Id == id);
         if (invoice is null) return false;
-        if (invoice.Status != InvoiceStatus.Created) return false;
+        if (invoice.Status == InvoiceStatus.Sent) return false;
 
         _context.Invoices.Remove(invoice);
         await _context.SaveChangesAsync();

@@ -16,6 +16,5 @@ public class CreateInvoiceDto
     [DefaultValue("Monthly service invoice")]
     public string? Comment { get; set; }
 
-    [DefaultValue(null)]
     public List<CreateInvoiceRowDto> Rows { get; set; } = new();
 }
