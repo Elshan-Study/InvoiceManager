@@ -2,15 +2,19 @@
 using InvoiceManager.DTOs.InvoiceDto;
 using InvoiceManager.Models;
 using InvoiceManager.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace InvoiceManager.Controllers;
 
+[Authorize]
 [Route("api/[controller]")]
 [ApiController]
 public class InvoicesController : ControllerBase
 {
     private readonly IInvoiceService _invoiceService;
+    private int GetCurrentUserId() => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
     public InvoicesController(IInvoiceService invoiceService)
     {
