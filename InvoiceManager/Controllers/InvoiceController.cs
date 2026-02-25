@@ -14,11 +14,14 @@ namespace InvoiceManager.Controllers;
 public class InvoicesController : ControllerBase
 {
     private readonly IInvoiceService _invoiceService;
+    private readonly IInvoiceExportService _exportService;
     private int GetCurrentUserId() => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
-    public InvoicesController(IInvoiceService invoiceService)
+    public InvoicesController(IInvoiceService invoiceService,
+                          IInvoiceExportService exportService)
     {
         _invoiceService = invoiceService;
+        _exportService = exportService;
     }
 
     /// <summary>
@@ -163,6 +166,37 @@ public class InvoicesController : ControllerBase
     {
         var result = await _invoiceService.GetPagedAsync(page, pageSize, customerId, status, startFrom, endTo, sortBy, ascending);
         return Ok(ApiResponse<PagedResult<InvoiceResponseDto>>.SuccessResponse(result, "Paged invoices retrieved successfully"));
+    }
+
+    /// <summary>
+    /// Downloads invoice as PDF or DOCX.
+    /// </summary>
+    [HttpGet("{id}/download")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Download(int id, [FromQuery] InvoiceExportFormat format)
+    {
+        var invoice = await _invoiceService.GetByIdAsync(id);
+        if (invoice is null)
+            return NotFound();
+
+        var fileBytes = await _exportService.ExportAsync(invoice, format);
+
+        var contentType = format switch
+        {
+            InvoiceExportFormat.Pdf =>
+                "application/pdf",
+
+            InvoiceExportFormat.Docx =>
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+
+            _ => "application/octet-stream"
+        };
+
+        return new FileContentResult(fileBytes, contentType)
+        {
+            FileDownloadName = $"invoice_{id}.{format.ToString().ToLower()}"
+        };
     }
 
 }

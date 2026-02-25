@@ -10,6 +10,7 @@ builder.Services
     .AddInvoiceManagerValidation()
     .AddInvoiceManagerAutoMapper()
     .AddInvoiceManagerServices()
+    .AddInvoiceManagerCors()
     .AddInvoiceManagerControllers();
 
 var app = builder.Build();

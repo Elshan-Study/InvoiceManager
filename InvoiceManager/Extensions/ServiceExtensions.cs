@@ -50,6 +50,7 @@ public static class ServiceExtensions
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<ICustomerService, CustomerService>();
         services.AddScoped<IInvoiceService, InvoiceService>();
+        services.AddScoped<IInvoiceExportService, InvoiceExportService>();
 
         return services;
     }
@@ -138,6 +139,21 @@ public static class ServiceExtensions
                     },
                     Array.Empty<string>()
                 }
+            });
+        });
+
+        return services;
+    }
+
+    public static IServiceCollection AddInvoiceManagerCors(this IServiceCollection services)
+    {
+        services.AddCors(options =>
+        {
+            options.AddPolicy("AllowAll", policy =>
+            {
+                policy.AllowAnyOrigin()
+                      .AllowAnyHeader()
+                      .AllowAnyMethod();
             });
         });
 

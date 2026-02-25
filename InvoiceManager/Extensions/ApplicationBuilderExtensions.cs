@@ -14,6 +14,7 @@ public static class ApplicationBuilderExtensions
 
         app.UseMiddleware<GlobalExceptionMiddleware>();
 
+        app.UseCors("AllowAll");
         app.UseAuthentication();
         app.UseAuthorization();
 
