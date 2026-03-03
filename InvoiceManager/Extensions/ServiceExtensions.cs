@@ -51,6 +51,7 @@ public static class ServiceExtensions
         services.AddScoped<ICustomerService, CustomerService>();
         services.AddScoped<IInvoiceService, InvoiceService>();
         services.AddScoped<IInvoiceExportService, InvoiceExportService>();
+        services.AddScoped<IInvoiceReportService, InvoiceReportService>();
 
         return services;
     }

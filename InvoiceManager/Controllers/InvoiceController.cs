@@ -1,5 +1,6 @@
 ﻿using InvoiceManager.Common;
 using InvoiceManager.DTOs.InvoiceDto;
+using InvoiceManager.DTOs.ReportDtos;
 using InvoiceManager.Models;
 using InvoiceManager.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -15,13 +16,16 @@ public class InvoicesController : ControllerBase
 {
     private readonly IInvoiceService _invoiceService;
     private readonly IInvoiceExportService _exportService;
+    private readonly IInvoiceReportService _reportService;
     private int GetCurrentUserId() => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
     public InvoicesController(IInvoiceService invoiceService,
-                          IInvoiceExportService exportService)
+                          IInvoiceExportService exportService,
+                          IInvoiceReportService reportService)
     {
         _invoiceService = invoiceService;
         _exportService = exportService;
+        _reportService = reportService;
     }
 
     /// <summary>
@@ -199,4 +203,52 @@ public class InvoicesController : ControllerBase
         };
     }
 
+
+    /// <summary>
+    /// Returns customer statistics: invoice count and total amount for the specified period.
+    /// </summary>
+    /// <param name="startFrom">Period start date (filters by invoice StartDate).</param>
+    /// <param name="endTo">Period end date (filters by invoice EndDate).</param>
+    /// <response code="200">Returns customer statistics successfully.</response>
+    [HttpGet("customers")]
+    public async Task<ActionResult<ApiResponse<IEnumerable<CustomerStatDto>>>> GetCustomerStats(
+        [FromQuery] DateTimeOffset? startFrom = null,
+        [FromQuery] DateTimeOffset? endTo = null)
+    {
+        var result = await _reportService.GetCustomerStatsAsync(startFrom, endTo);
+        return Ok(ApiResponse<IEnumerable<CustomerStatDto>>
+            .SuccessResponse(result, "Customer statistics retrieved successfully."));
+    }
+
+    /// <summary>
+    /// Returns work statistics: invoice count and total amount per service for the specified period.
+    /// </summary>
+    /// <param name="startFrom">Period start date (filters by invoice StartDate).</param>
+    /// <param name="endTo">Period end date (filters by invoice EndDate).</param>
+    /// <response code="200">Returns work statistics successfully.</response>
+    [HttpGet("works")]
+    public async Task<ActionResult<ApiResponse<IEnumerable<WorkStatDto>>>> GetWorkStats(
+        [FromQuery] DateTimeOffset? startFrom = null,
+        [FromQuery] DateTimeOffset? endTo = null)
+    {
+        var result = await _reportService.GetWorkStatsAsync(startFrom, endTo);
+        return Ok(ApiResponse<IEnumerable<WorkStatDto>>
+            .SuccessResponse(result, "Work statistics retrieved successfully."));
+    }
+
+    /// <summary>
+    /// Returns invoice statistics: invoice count grouped by status for the specified period.
+    /// </summary>
+    /// <param name="startFrom">Period start date (filters by invoice StartDate).</param>
+    /// <param name="endTo">Period end date (filters by invoice EndDate).</param>
+    /// <response code="200">Returns invoice status statistics successfully.</response>
+    [HttpGet("statuses")]
+    public async Task<ActionResult<ApiResponse<IEnumerable<InvoiceStatusStatDto>>>> GetStatusStats(
+        [FromQuery] DateTimeOffset? startFrom = null,
+        [FromQuery] DateTimeOffset? endTo = null)
+    {
+        var result = await _reportService.GetStatusStatsAsync(startFrom, endTo);
+        return Ok(ApiResponse<IEnumerable<InvoiceStatusStatDto>>
+            .SuccessResponse(result, "Invoice status statistics retrieved successfully."));
+    }
 }
